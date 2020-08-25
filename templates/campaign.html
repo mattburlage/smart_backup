@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load crispy_forms_filters %}
+{% load humanize %}
+
+{% block title %}{{ campaign.title }}{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block main %}
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <form autocomplete="off" method="POST">
+            {% csrf_token %}
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Campaign Settings</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        {{ camp_form|crispy }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h2>Smart Backup</h2>
+                <h5 class="mt-2">Campaign: {{ campaign.title }}</h5>
+                <h6 class="mt-2">Size: {{ campaign.total_size|filesizeformat }}</h6>
+                <p class="mt-1">
+                    <a class="btn btn-primary btn-sm" data-toggle="modal" href="#settingsModal">
+                        Change Settings
+                    </a>
+                    <button class="btn btn-success btn-sm" id="initiateBtn" onclick="initiateBackup()">
+                        Initiate Backup
+                    </button>
+                </p>
+            </div>
+            <div class="col-xxl-8 offset-xxl-2 mt-3">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Source</th>
+                        <th scope="col">Backup</th>
+                        <th scope="col">Size</th>
+                        <th scope="col" class="text-center">
+                            Actions
+                        </th>
+                        <th scope="col" class="text-center">
+                            Keep Safe
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for backup in campaign.backups.all %}
+                        <tr>
+                            <td>{{ backup.id }}</td>
+                            <td>{{ backup.source }}</td>
+                            <td>{{ backup.added_on_dt|date:"m-d-Y h:i A" }}</td>
+                            <td>{{ backup.file.size|filesizeformat }}</td>
+                            <td class="text-center">
+                                <a href="{{ backup.file.url }}">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </td>
+                            <td class="text-center" id="keep-safe-row-{{ backup.id }}">
+                                <a href="#" onclick="toggleKeepSafe({{ backup.id }})" id="keep-safe-{{ backup.id }}" class="text-dark">
+                                    {% if backup.do_not_delete %}
+                                        <i id="keep-safe-icon-{{ backup.id }}" class="far fa-check-square"></i>
+                                    {% else %}
+                                        <i id="keep-safe-icon-{{ backup.id }}" class="far fa-square"></i>
+                                    {% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No Results</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="loadingModal" tabindex="-1" >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h3>Processing Request</h3>
+                    <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js" integrity="sha512-efUTj3HdSPwWJ9gjfGR71X9cvsrthIA78/Fvd/IN+fttQVy7XWkOAXb295j8B3cmm/kFKVxjiNYzKw9IQJHIuQ==" crossorigin="anonymous"></script>
+
+    <script>
+
+        async function initiateBackup(e) {
+            const apiUrl = "{% url 'api_initiate' camp_id=campaign.pk %}"
+
+            let response = await fetch(apiUrl);
+            if (response.ok) {
+                $('#initiateBtn').notify('Scheduled',  "success");
+            }
+        }
+
+        async function toggleKeepSafe(bac_id) {
+            const apiUrl = `{% url 'api_keep_toggle_link' %}${bac_id}`
+
+            const ksIcon = $(`#keep-safe-icon-${bac_id}`);
+
+            ksIcon.addClass('fa-minus-square')
+            ksIcon.removeClass('fa-square')
+            ksIcon.removeClass('fa-check-square')
+
+            let response = await fetch(apiUrl);
+
+            if (response.ok) {
+                const json = await response.json()
+
+                if (json['do_not_delete']) {
+                    ksIcon.addClass('fa-check-square')
+                } else {
+                    ksIcon.addClass('fa-square')
+                }
+
+                ksIcon.removeClass('fa-minus-square')
+
+                $.notify('Saved.', 'success')
+
+            } else {
+                $.notify('An error occurred. No changes saved.')
+            }
+        }
+    </script>
+{% endblock %}

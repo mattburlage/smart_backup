@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load crispy_forms_filters %}
+{% load humanize %}
+
+{% block title %}Home Page{% endblock %}
+
+{% block main %}
+    <div class="modal fade" id="newCampModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <form method="POST" autocomplete="off">
+            {% csrf_token %}
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">New Campaign</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        {{ new_form|crispy }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Campaign</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h2>Smart Backup</h2>
+                <h5 class="mt-1">My Campaigns</h5>
+                <h6 class="mt-1">Total Size: {{ total_size|filesizeformat }}</h6>
+                <p class="mt-2">
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#newCampModal">
+                        New Campaign
+                    </button>
+                </p>
+            </div>
+            <div class="col-xxl-6 offset-xxl-3 mt-3">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Size</th>
+                        <th scope="col">Last Backup</th>
+                        <th scope="col">Last Backup Size</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for campaign in campaigns %}
+                        <tr>
+                            <td>{{ campaign.id }}</td>
+                            <td>
+                                <a class="text-dark" href="{% url 'campaign' camp_id=campaign.pk %}">
+                                    {{ campaign.title }}
+                                </a>
+                            </td>
+                            <td>{{ campaign.total_size|filesizeformat }}</td>
+                            {% if campaign.last_backup %}
+                                <td>{{ campaign.last_backup.added_on_dt|naturaltime}}</td>
+                            {% else %}
+                                <td class="text-muted">None</td>
+                            {% endif %}
+                            <td>{{ campaign.last_backup_size|filesizeformat }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">No Results</th>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
