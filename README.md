@@ -1,6 +1,6 @@
 # smart_backup
 
-Smart Backup is a simple Django app to help automatically back up PostgreSQL databases periodically and keep the storage footprint to a minumum by selectively removing backups once a certain time period has elapsed.
+Smart Backup is a simple Django project to help automatically back up PostgreSQL databases periodically and keep the storage footprint to a minumum by selectively removing backups once a certain time period has elapsed.
 
 For example, with every setting on:
 
